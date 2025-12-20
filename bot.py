@@ -98,7 +98,7 @@ async def process_decision(callback: CallbackQuery):
 
     if action == "approve":
         try:
-            await callback.message.copy_to(chat_id=CHANNEL_ID)
+            await callback.message.forward(chat_id=CHANNEL_ID)
             await callback.answer("Опубликовано!")
             await close_ticket(ticket_id, "✅ Опубликовано")
             await callback.message.reply("✅ Ты одобрил этот пост.")
@@ -153,4 +153,5 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
+
         print("Бот остановлен")
