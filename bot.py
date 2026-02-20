@@ -13,15 +13,102 @@ from aiogram.fsm.context import FSMContext
 load_dotenv() # Читаем файл .env
 
 TOKEN = os.getenv("BOT_TOKEN")
-CHANNEL_ID = int(os.getenv("CHANNEL_ID")) # Превращаем строку в число
+CHANNEL_ID = int(os.getenv("CHANNEL_ID") or 0) # Превращаем строку в число
 
 # Хитрый способ получить список чисел из строки "123,456,789"
 admin_ids_str = os.getenv("ADMIN_IDS", "")
 ADMIN_IDS = [int(x) for x in admin_ids_str.split(",") if x.strip()]
 
+LANGUAGE = os.getenv("LANGUAGE", "ru").lower()
+if LANGUAGE not in ["ru", "en"]:
+    LANGUAGE = "ru"
+
+# --- ЛОКАЛИЗАЦИЯ (LOCALES) ---
+LOCALES = {
+    "ru": {
+        "text_start_admin": "Привет, Админ! ID канала: {CHANNEL_ID}",
+        "text_start_user": "Присылай контент, я передам админам анонимно.",
+        "text_sent_to_mod": "Отправлено на модерацию.",
+        "text_mod_error": "Ошибка связи с админами.",
+        "text_already_processed": "Этот пост уже обработан!",
+        "text_published_alert": "Опубликовано!",
+        "text_published_log": "✅ Опубликовано",
+        "text_published_reply": "✅ Ты одобрил этот пост.",
+        "text_rejected_alert": "Отклонено",
+        "text_rejected_log": "❌ Отклонено",
+        "text_rejected_reply": "❌ Ты отклонил этот пост.",
+        "post_signature": "\n\n<i>~ Анонимно</i>",
+        "btn_user_anon": "🥷 Отправить анонимно",
+        "btn_user_name": "👁 Показать мое имя",
+        "btn_cancel": "❌ Отмена",
+        "btn_admin_pub_named": "✅ Опубликовать (С именем)",
+        "btn_admin_pub_anon": "✅ Опубликовать (Анон)",
+        "btn_admin_reject": "❌ Отклонить",
+        "btn_set_start_user": "Приветствие юзера",
+        "btn_set_start_admin": "Приветствие админа",
+        "btn_set_sent_mod": "Отправлено на модерацию",
+        "btn_set_signature": "Подпись к посту (тильда)",
+        "btn_set_pub_reply": "Текст: Опубликовано (ответ)",
+        "btn_set_rej_reply": "Текст: Отклонено (ответ)",
+        "msg_settings_panel": "Панель настроек текстов и подписи:",
+        "msg_current_val": "Текущее значение:\n<pre>{current_text}</pre>\n\nОтправьте новый текст для этой настройки (или отправьте /cancel для отмены):",
+        "msg_edit_cancel": "Редактирование отменено.",
+        "msg_send_text": "Пожалуйста, отправьте текст.",
+        "msg_set_updated": "Настройка успешно обновлена!\nНовое значение:\n<pre>{new_text}</pre>",
+        "msg_pub_err": "Ошибка публикации:",
+        "msg_how_to_send": "Как отправить этот пост?",
+        "msg_user_cancel": "Отменено",
+        "msg_sig_from": "\n\n<i>~ От: {first_name}</i>",
+        "log_admin_err": "Ошибка отправки админу {admin_id}:",
+        "log_bot_start": "Бот запущен...",
+        "log_bot_stop": "Бот остановлен",
+        "err_env": "ОШИБКА: Не заполнен файл .env"
+    },
+    "en": {
+        "text_start_admin": "Hello, Admin! Channel ID: {CHANNEL_ID}",
+        "text_start_user": "Send content, I'll forward it to admins anonymously.",
+        "text_sent_to_mod": "Sent for moderation.",
+        "text_mod_error": "Error communicating with admins.",
+        "text_already_processed": "This post has already been processed!",
+        "text_published_alert": "Published!",
+        "text_published_log": "✅ Published",
+        "text_published_reply": "✅ You approved this post.",
+        "text_rejected_alert": "Rejected",
+        "text_rejected_log": "❌ Rejected",
+        "text_rejected_reply": "❌ You rejected this post.",
+        "post_signature": "\n\n<i>~ Anonymously</i>",
+        "btn_user_anon": "🥷 Send anonymously",
+        "btn_user_name": "👁 Show my name",
+        "btn_cancel": "❌ Cancel",
+        "btn_admin_pub_named": "✅ Publish (Named)",
+        "btn_admin_pub_anon": "✅ Publish (Anon)",
+        "btn_admin_reject": "❌ Reject",
+        "btn_set_start_user": "User greeting",
+        "btn_set_start_admin": "Admin greeting",
+        "btn_set_sent_mod": "Sent for moderation text",
+        "btn_set_signature": "Post signature (tilde)",
+        "btn_set_pub_reply": "Text: Published (reply)",
+        "btn_set_rej_reply": "Text: Rejected (reply)",
+        "msg_settings_panel": "Text and signature settings panel:",
+        "msg_current_val": "Current value:\n<pre>{current_text}</pre>\n\nSend new text for this setting (or send /cancel to abort):",
+        "msg_edit_cancel": "Editing cancelled.",
+        "msg_send_text": "Please send the text.",
+        "msg_set_updated": "Setting updated successfully!\nNew value:\n<pre>{new_text}</pre>",
+        "msg_pub_err": "Publication error:",
+        "msg_how_to_send": "How to send this post?",
+        "msg_user_cancel": "Cancelled",
+        "msg_sig_from": "\n\n<i>~ From: {first_name}</i>",
+        "log_admin_err": "Error sending to admin {admin_id}:",
+        "log_bot_start": "Bot started...",
+        "log_bot_stop": "Bot stopped",
+        "err_env": "ERROR: .env file is missing variables"
+    }
+}
+_ = LOCALES[LANGUAGE]
+
 # Проверка, что данные загрузились
 if not TOKEN or not ADMIN_IDS:
-    print("ERROR: .env file is missing variables")
+    print(_["err_env"])
     exit()
 
 logging.basicConfig(level=logging.INFO)
@@ -64,18 +151,18 @@ def init_db():
         
         # Заполняем дефолтные настройки
         default_settings = {
-            "text_start_admin": "Hello, Admin! Channel ID: {CHANNEL_ID}",
-            "text_start_user": "Send content, I'll forward it to admins anonymously.",
-            "text_sent_to_mod": "Sent for moderation.",
-            "text_mod_error": "Error communicating with admins.",
-            "text_already_processed": "This post has already been processed!",
-            "text_published_alert": "Published!",
-            "text_published_log": "✅ Published",
-            "text_published_reply": "✅ You approved this post.",
-            "text_rejected_alert": "Rejected",
-            "text_rejected_log": "❌ Rejected",
-            "text_rejected_reply": "❌ You rejected this post.",
-            "post_signature": "\n\n<i>~ Anonymously</i>",
+            "text_start_admin": _["text_start_admin"],
+            "text_start_user": _["text_start_user"],
+            "text_sent_to_mod": _["text_sent_to_mod"],
+            "text_mod_error": _["text_mod_error"],
+            "text_already_processed": _["text_already_processed"],
+            "text_published_alert": _["text_published_alert"],
+            "text_published_log": _["text_published_log"],
+            "text_published_reply": _["text_published_reply"],
+            "text_rejected_alert": _["text_rejected_alert"],
+            "text_rejected_log": _["text_rejected_log"],
+            "text_rejected_reply": _["text_rejected_reply"],
+            "post_signature": _["post_signature"],
         }
         
         for key, value in default_settings.items():
@@ -104,30 +191,30 @@ class SettingsState(StatesGroup):
 # --- КЛАВИАТУРА ---
 def get_user_choice_keyboard(msg_id):
     buttons = [
-        [InlineKeyboardButton(text="🥷 Send anonymously", callback_data=f"send_anon_{msg_id}")],
-        [InlineKeyboardButton(text="👁 Show my name", callback_data=f"send_name_{msg_id}")],
-        [InlineKeyboardButton(text="❌ Cancel", callback_data=f"send_cancel_{msg_id}")]
+        [InlineKeyboardButton(text=_["btn_user_anon"], callback_data=f"send_anon_{msg_id}")],
+        [InlineKeyboardButton(text=_["btn_user_name"], callback_data=f"send_name_{msg_id}")],
+        [InlineKeyboardButton(text=_["btn_cancel"], callback_data=f"send_cancel_{msg_id}")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 def get_admin_keyboard(ticket_id, is_named=False):
-    btn_text = "✅ Publish (Named)" if is_named else "✅ Publish (Anon)"
+    btn_text = _["btn_admin_pub_named"] if is_named else _["btn_admin_pub_anon"]
     buttons = [
         [
             InlineKeyboardButton(text=btn_text, callback_data=f"approve_{ticket_id}"),
-            InlineKeyboardButton(text="❌ Reject", callback_data=f"reject_{ticket_id}")
+            InlineKeyboardButton(text=_["btn_admin_reject"], callback_data=f"reject_{ticket_id}")
         ]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 def get_settings_keyboard():
     buttons = [
-        [InlineKeyboardButton(text="User greeting", callback_data="settings_edit_text_start_user")],
-        [InlineKeyboardButton(text="Admin greeting", callback_data="settings_edit_text_start_admin")],
-        [InlineKeyboardButton(text="Sent for moderation text", callback_data="settings_edit_text_sent_to_mod")],
-        [InlineKeyboardButton(text="Post signature (tilde)", callback_data="settings_edit_post_signature")],
-        [InlineKeyboardButton(text="Text: Published (reply)", callback_data="settings_edit_text_published_reply")],
-        [InlineKeyboardButton(text="Text: Rejected (reply)", callback_data="settings_edit_text_rejected_reply")],
+        [InlineKeyboardButton(text=_["btn_set_start_user"], callback_data="settings_edit_text_start_user")],
+        [InlineKeyboardButton(text=_["btn_set_start_admin"], callback_data="settings_edit_text_start_admin")],
+        [InlineKeyboardButton(text=_["btn_set_sent_mod"], callback_data="settings_edit_text_sent_to_mod")],
+        [InlineKeyboardButton(text=_["btn_set_signature"], callback_data="settings_edit_post_signature")],
+        [InlineKeyboardButton(text=_["btn_set_pub_reply"], callback_data="settings_edit_text_published_reply")],
+        [InlineKeyboardButton(text=_["btn_set_rej_reply"], callback_data="settings_edit_text_rejected_reply")],
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
@@ -144,7 +231,7 @@ async def close_ticket(ticket_id, decision_text):
         try:
             await bot.edit_message_reply_markup(chat_id=admin_id, message_id=msg_id, reply_markup=None)
         except Exception as e:
-            logging.error(f"Failed to update message for admin {admin_id}: {e}")
+            logging.error(f"{_['log_admin_err']} {e}")
 
 # --- ОБРАБОТЧИКИ ---
 
@@ -160,7 +247,7 @@ async def cmd_start(message: Message):
 async def cmd_settings(message: Message):
     if message.from_user.id not in ADMIN_IDS:
         return
-    await message.answer("Text and signature settings panel:", reply_markup=get_settings_keyboard())
+    await message.answer(_["msg_settings_panel"], reply_markup=get_settings_keyboard())
 
 @dp.callback_query(F.data.startswith("settings_edit_"))
 async def process_settings_edit(callback: CallbackQuery, state: FSMContext):
@@ -173,7 +260,8 @@ async def process_settings_edit(callback: CallbackQuery, state: FSMContext):
     await state.update_data(setting_key=key)
     await state.set_state(SettingsState.waiting_for_text)
     
-    await callback.message.answer(f"Current value:\n<pre>{current_text}</pre>\n\nSend new text for this setting (or send /cancel to abort):", parse_mode="HTML")
+    msg_text = _["msg_current_val"].replace("{current_text}", current_text)
+    await callback.message.answer(msg_text, parse_mode="HTML")
     await callback.answer()
 
 @dp.message(Command("cancel"))
@@ -182,7 +270,7 @@ async def cmd_cancel(message: Message, state: FSMContext):
     if current_state is None:
         return
     await state.clear()
-    await message.answer("Editing cancelled.")
+    await message.answer(_["msg_edit_cancel"])
 
 @dp.message(SettingsState.waiting_for_text)
 async def process_new_setting_text(message: Message, state: FSMContext):
@@ -191,12 +279,13 @@ async def process_new_setting_text(message: Message, state: FSMContext):
     
     new_text = message.text if message.text else message.caption
     if not new_text:
-        await message.answer("Please send the text.")
+        await message.answer(_["msg_send_text"])
         return
         
     set_setting(key, new_text)
     await state.clear()
-    await message.answer(f"Setting updated successfully!\nNew value:\n<pre>{new_text}</pre>", parse_mode="HTML", reply_markup=get_settings_keyboard())
+    msg_text = _["msg_set_updated"].replace("{new_text}", new_text)
+    await message.answer(msg_text, parse_mode="HTML", reply_markup=get_settings_keyboard())
 
 @dp.callback_query(F.data.startswith(("approve_", "reject_")))
 async def process_decision(callback: CallbackQuery):
@@ -232,7 +321,7 @@ async def process_decision(callback: CallbackQuery):
             await close_ticket(ticket_id, get_setting("text_published_log"))
             await callback.message.reply(get_setting("text_published_reply"))
         except Exception as e:
-            await callback.answer(f"Publication error: {e}", show_alert=True)
+            await callback.answer(f"{_['msg_pub_err']} {e}", show_alert=True)
 
     elif action == "reject":
         await callback.answer(get_setting("text_rejected_alert"))
@@ -245,7 +334,7 @@ async def handle_content(message: Message):
         return
 
     await message.reply(
-        "How to send this post?", 
+        _["msg_how_to_send"], 
         reply_markup=get_user_choice_keyboard(message.message_id)
     )
 
@@ -256,7 +345,7 @@ async def process_user_send_choice(callback: CallbackQuery):
     
     if action == "cancel":
         await callback.message.delete()
-        await callback.answer("Cancelled")
+        await callback.answer(_["msg_user_cancel"])
         return
         
     await callback.message.delete()
@@ -269,7 +358,7 @@ async def process_user_send_choice(callback: CallbackQuery):
         is_named = True
         import html
         first_name = html.escape(callback.from_user.first_name)
-        custom_signature = f'\n\n<i>~ From: {first_name}</i>'
+        custom_signature = _["msg_sig_from"].replace("{first_name}", first_name)
         
     with sqlite3.connect("bot_database.db") as conn:
         cursor = conn.cursor()
@@ -292,7 +381,7 @@ async def process_user_send_choice(callback: CallbackQuery):
                                (ticket_id, admin_id, sent_msg.message_id))
                 successful_sends += 1
             except Exception as e:
-                logging.error(f"Error sending to admin {admin_id}: {e}")
+                logging.error(f"{_['log_admin_err']} {e}")
         conn.commit()
 
     if successful_sends > 0:
@@ -302,7 +391,7 @@ async def process_user_send_choice(callback: CallbackQuery):
 
 async def main():
     init_db()
-    print("Bot started...")
+    print(_["log_bot_start"])
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 
@@ -311,4 +400,4 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
 
-        print("Bot stopped")
+        print(_["log_bot_stop"])

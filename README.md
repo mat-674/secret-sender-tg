@@ -45,12 +45,14 @@ Open `.env` and fill in your details:
 BOT_TOKEN=123456:Your-Token-From-BotFather
 CHANNEL_ID=-1001234567890  # ID of the channel where posts will be published
 ADMIN_IDS=123456789,987654321 # Comma-separated admin IDs
+LANGUAGE=ru # Language of the bot interface (ru or en)
 ```
 
 **How to get an ID?**
 
 * **ADMIN_IDS:** Send `/start` to your bot (if you have already set a rough ID) or use a third-party bot (e.g., @userinfobot).
 * **CHANNEL_ID:** Forward a message from your channel to @getmyid_bot or add this bot to the channel. Channel IDs usually start with -100.
+* **LANGUAGE:** Used to determine standard button texts and default DB values on initialization (`ru` or `en`).
 
 ### Step 5. Run the bot
 ```bash
